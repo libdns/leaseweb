@@ -56,7 +56,7 @@ func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.Record
 		return nil, err
 	}
 
-	var recordSets LeasewebRecordSets
+	var recordSets leasewebRecordSets
 	json.Unmarshal([]byte(data), &recordSets)
 
 	var records []libdns.Record
@@ -86,7 +86,7 @@ func (p *Provider) AppendRecords(ctx context.Context, zone string, records []lib
 	var addedRecords []libdns.Record
 
 	for _, record := range records {
-		body := &LeasewebRecordSet{
+		body := &leasewebRecordSet{
 			Name:    record.Name,
 			Type:    record.Type,
 			Content: []string{record.Value},
@@ -128,11 +128,11 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 
 	var updatedRecords []libdns.Record
 
-	var resourceRecordSets []LeasewebRecordSet
+	var resourceRecordSets []leasewebRecordSet
 
 	for _, record := range records {
 
-		recordSet := LeasewebRecordSet{
+		recordSet := leasewebRecordSet{
 			Name:    record.Name,
 			Type:    record.Type,
 			Content: []string{record.Value},
@@ -144,7 +144,7 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 		updatedRecords = append(updatedRecords, record)
 	}
 
-	body := &LeasewebRecordSets{
+	body := &leasewebRecordSets{
 		ResourceRecordSets: resourceRecordSets,
 	}
 
