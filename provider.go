@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"sync"
 	"time"
+	"strings"
 
 	"github.com/libdns/libdns"
 )
@@ -28,6 +29,23 @@ type Provider struct {
 	mutex  sync.Mutex
 }
 
+// Leaseweb and libdns have very similar interfaces, but with important differents.
+// This funcion maps a libdns.Record to a leasewebRecordSet.
+// See the README for more info.
+func fromLibdns(zone string, record libdns.Record) leasewebRecordSet {
+	var ttlSeconds = int(record.TTL.Seconds())
+	if (ttlSeconds == 0) {
+		ttlSeconds = 60
+	}
+
+	return leasewebRecordSet{
+		Name:    fmt.Sprintf("%s.%s", record.Name, zone),
+		Type:    record.Type,
+		Content: []string{record.Value},
+		TTL:     ttlSeconds,
+	}
+}
+
 // GetRecords lists all the records in the zone.
 func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.Record, error) {
 	p.mutex.Lock()
@@ -35,7 +53,9 @@ func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.Record
 
 	client := &http.Client{}
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://api.leaseweb.com/hosting/v2/domains/%s/resourceRecordSets", zone), nil)
+	var domainName = strings.TrimSuffix(zone, ".")
+
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://api.leaseweb.com/hosting/v2/domains/%s/resourceRecordSets", domainName), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -86,17 +106,18 @@ func (p *Provider) AppendRecords(ctx context.Context, zone string, records []lib
 	var addedRecords []libdns.Record
 
 	for _, record := range records {
-		body := &leasewebRecordSet{
-			Name:    record.Name,
-			Type:    record.Type,
-			Content: []string{record.Value},
-			TTL:     int(record.TTL.Seconds()),
-		}
+		recordSet := fromLibdns(zone, record)
 
 		bodyBuffer := new(bytes.Buffer)
+		json.NewEncoder(bodyBuffer).Encode(recordSet)
+
+		var domainName = strings.TrimSuffix(zone, ".")
+
+		bodyBuffer = new(bytes.Buffer)
 		json.NewEncoder(bodyBuffer).Encode(body)
 
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://api.leaseweb.com/hosting/v2/domains/%s/resourceRecordSets", zone), bodyBuffer)
+
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://api.leaseweb.com/hosting/v2/domains/%s/resourceRecordSets", domainName), bodyBuffer)
 		if err != nil {
 			return nil, err
 		}
@@ -131,13 +152,7 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 	var resourceRecordSets []leasewebRecordSet
 
 	for _, record := range records {
-
-		recordSet := leasewebRecordSet{
-			Name:    record.Name,
-			Type:    record.Type,
-			Content: []string{record.Value},
-			TTL:     int(record.TTL.Seconds()),
-		}
+		recordSet := fromLibdns(zone, record)
 
 		resourceRecordSets = append(resourceRecordSets, recordSet)
 
@@ -151,7 +166,9 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 	bodyBuffer := new(bytes.Buffer)
 	json.NewEncoder(bodyBuffer).Encode(body)
 
-	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("https://api.leaseweb.com/hosting/v2/domains/%s/resourceRecordSets", zone), bodyBuffer)
+	var domainName = strings.TrimSuffix(zone, ".")
+
+	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("https://api.leaseweb.com/hosting/v2/domains/%s/resourceRecordSets", domainName), bodyBuffer)
 	if err != nil {
 		return nil, err
 	}
@@ -179,8 +196,12 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 
 	var deletedRecords []libdns.Record
 
+	var domainName = strings.TrimSuffix(zone, ".")
+
 	for _, record := range records {
-		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("https://api.leaseweb.com/hosting/v2/domains/%s/resourceRecordSets/%s/%s", zone, record.Name, record.Type), nil)
+		recordSet := fromLibdns(zone, record)
+
+		req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("https://api.leaseweb.com/hosting/v2/domains/%s/resourceRecordSets/%s/%s", domainName, recordSet.Name, record.Type), nil)
 		if err != nil {
 			return nil, err
 		}

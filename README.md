@@ -11,6 +11,12 @@ Generate an API Key via the [Leaseweb customer portal](https://secure.leaseweb.c
 
 Place API Key in the configuration as `APIKey`.
 
+## Gotcha's
+
+- Leaseweb expects full domain (sub.example.com); where libdns does not (sub as name and example.com as zone).
+- libdns might providea TTL of 0; Leaseweb validates on their supported values (defauling to 60 for now).
+- Leaseweb does not expect a trailing dot in the zone; libdns provides one, so we remove it.
+
 ## Compiling
 
 ### Docker
@@ -18,7 +24,7 @@ Place API Key in the configuration as `APIKey`.
 Run:
 
 ```
-docker run --rm -it -v "$PWD":/usr/local/go/src/leaseweb -w /usr/local/go/src/leaseweb golang:1.16
+docker run --rm -it -v "$PWD":/go/src/leaseweb -w /go/src/leaseweb golang:1.16
 ```
 
 which will drop you in an interactive bash prompt where `go` and friends are available.
