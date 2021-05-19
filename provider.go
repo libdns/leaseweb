@@ -113,10 +113,6 @@ func (p *Provider) AppendRecords(ctx context.Context, zone string, records []lib
 
 		var domainName = strings.TrimSuffix(zone, ".")
 
-		bodyBuffer = new(bytes.Buffer)
-		json.NewEncoder(bodyBuffer).Encode(body)
-
-
 		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://api.leaseweb.com/hosting/v2/domains/%s/resourceRecordSets", domainName), bodyBuffer)
 		if err != nil {
 			return nil, err
