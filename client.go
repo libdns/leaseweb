@@ -6,8 +6,25 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 )
+
+func handleLeasewebHttpError(res *http.Response) error {
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		var message = fmt.Sprintf("Received StatusCode %d from Leaseweb API.", res.StatusCode)
+		fmt.Fprintf(os.Stderr, "%s\n", message)
+		data, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		var errorResponseModel leasewebHttpError
+		json.Unmarshal([]byte(data), &errorResponseModel)
+		fmt.Fprintf(os.Stderr, "%+v", errorResponseModel)
+		return fmt.Errorf(message)
+	}
+	return nil
+}
 
 func (p *Provider) listRecordSets(domainName string) (leasewebRecordSets, error) {
 	httpClient := &http.Client{}
@@ -97,9 +114,9 @@ func (p *Provider) updateRecordSet(domainName string, recordSet leasewebRecordSe
 	if err != nil {
 		return leasewebRecordSets{}, err
 	}
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-
-		return leasewebRecordSets{}, fmt.Errorf("Received StatusCode %d from Leaseweb API. %s", res.StatusCode, res.Body)
+	err = handleLeasewebHttpError(res)
+	if err != nil {
+		return leasewebRecordSets{}, err
 	}
 
 	return leasewebRecordSets{}, nil

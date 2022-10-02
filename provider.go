@@ -145,8 +145,9 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 		if err != nil {
 			return nil, err
 		}
-		if res.StatusCode < 200 || res.StatusCode > 299 {
-			return nil, fmt.Errorf("Received StatusCode %d from Leaseweb API.", res.StatusCode)
+		err = handleLeasewebHttpError(res)
+		if err != nil {
+			return nil, err
 		}
 	}
 
