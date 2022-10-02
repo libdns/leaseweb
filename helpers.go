@@ -57,6 +57,8 @@ func fromLibdns(zone string, records []libdns.Record) ([]leasewebRecordSet, erro
 				newRecordSet.Content = append(newRecordSet.Content, otherRecordInfo.libdnsRecord.Value)
 			}
 		}
+
+		newRecordSet.Name = newRecordSet.Name + "."
 		recordSets = append(recordSets, newRecordSet)
 	}
 
