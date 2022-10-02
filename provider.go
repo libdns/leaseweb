@@ -116,6 +116,7 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 // DeleteRecords deletes the records from the zone. It returns the records that were deleted.
 // Leaseweb specifics:
 // - Well-formatted DELETE requests will always succeed, even for non-existing records.
+// TODO: Extract HTTP logic into function in client.go.
 func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []libdns.Record) ([]libdns.Record, error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
