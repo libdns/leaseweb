@@ -32,7 +32,7 @@ func (p *Provider) GetRecords(ctx context.Context, zone string) ([]libdns.Record
 
 	domainName := strings.TrimSuffix(zone, ".")
 
-	recordSets, err := p.getRecordsHTTP(domainName)
+	recordSets, err := p.listRecordSets(domainName)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (p *Provider) AppendRecords(ctx context.Context, zone string, records []lib
 	}
 
 	for _, recordSet := range recordSets {
-		_, err := p.postToResourceRecordSet(zone, recordSet)
+		_, err := p.createRecordSet(zone, recordSet)
 		if err != nil {
 			return nil, err
 		}
@@ -72,7 +72,7 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 	defer p.mutex.Unlock()
 
 	domainName := strings.TrimSuffix(zone, ".")
-	existingRecordSets, err := p.getRecordsHTTP(domainName)
+	existingRecordSets, err := p.listRecordSets(domainName)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 		}
 
 		if hasExisting {
-			updatedRecordResponse, err := p.putToResourceRecordSet(zone, recordSet)
+			updatedRecordResponse, err := p.updateRecordSet(zone, recordSet)
 			if err != nil {
 				return nil, err
 			}
@@ -103,7 +103,7 @@ func (p *Provider) SetRecords(ctx context.Context, zone string, records []libdns
 				updatedRecords = append(updatedRecords, updatedRecord)
 			}
 		} else {
-			_, err := p.postToResourceRecordSet(zone, recordSet)
+			_, err := p.createRecordSet(zone, recordSet)
 			if err != nil {
 				return nil, err
 			}

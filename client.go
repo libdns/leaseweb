@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func (p *Provider) getRecordsHTTP(domainName string) (leasewebRecordSets, error) {
+func (p *Provider) listRecordSets(domainName string) (leasewebRecordSets, error) {
 	httpClient := &http.Client{}
 
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://api.leaseweb.com/hosting/v2/domains/%s/resourceRecordSets", domainName), nil)
@@ -42,7 +42,7 @@ func (p *Provider) getRecordsHTTP(domainName string) (leasewebRecordSets, error)
 	return recordSets, nil
 }
 
-func (p *Provider) postToResourceRecordSet(zone string, recordSet leasewebRecordSet) (leasewebRecordSet, error) {
+func (p *Provider) createRecordSet(zone string, recordSet leasewebRecordSet) (leasewebRecordSet, error) {
 	client := &http.Client{}
 
 	bodyBuffer := new(bytes.Buffer)
@@ -75,7 +75,7 @@ func (p *Provider) postToResourceRecordSet(zone string, recordSet leasewebRecord
 	return recordSet, nil
 }
 
-func (p *Provider) putToResourceRecordSet(domainName string, recordSet leasewebRecordSet) (leasewebRecordSets, error) {
+func (p *Provider) updateRecordSet(domainName string, recordSet leasewebRecordSet) (leasewebRecordSets, error) {
 	client := &http.Client{}
 
 	bodyBuffer := new(bytes.Buffer)
