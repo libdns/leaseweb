@@ -13,6 +13,15 @@ type leasewebRecordSets struct {
 	ResourceRecordSets []leasewebRecordSet `json:"resourceRecordSets"`
 }
 
+// Errors
+type leasewebHttpError struct {
+	ErrorMessage  string `json:"errorMessage"`
+	UserMessage   string `json:"userMessage"`
+	CorrelationId string `json:"correlationId"`
+	// Its not a string but an json object.
+	ErrorDetails string `json:"errorDetails"`
+}
+
 // updateRecordSet
 // https://developer.leaseweb.com/api-docs/domains_v2.html#operation/put/domains/{domainName}/resourceRecordSets/{name}/{type}
 type updateRecordSetRequest struct {
