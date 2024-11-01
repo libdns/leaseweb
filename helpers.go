@@ -2,10 +2,15 @@ package leaseweb
 
 import (
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/libdns/libdns"
 )
+
+// @see https://developer.leaseweb.com/api-docs/domains_v2.html#tag/DNS/operation/domains-resourcerecordsets-post
+var supportedTTLs = []int{60, 300, 1800, 3600, 14400, 28800, 43200, 86400}
 
 func fromLibdns(zone string, records []libdns.Record) ([]leasewebRecordSet, error) {
 	var recordsInfo = []struct {
@@ -24,6 +29,7 @@ func fromLibdns(zone string, records []libdns.Record) ([]leasewebRecordSet, erro
 
 	var errors []string
 	var recordSets []leasewebRecordSet
+	var domainName = strings.TrimSuffix(zone, ".")
 
 	for currentIdx := 0; currentIdx < len(recordsInfo); currentIdx++ {
 		var currentRecordInfo = &recordsInfo[currentIdx]
@@ -33,10 +39,20 @@ func fromLibdns(zone string, records []libdns.Record) ([]leasewebRecordSet, erro
 		}
 		currentRecordInfo.consumed = true
 
+		// Cleanup record name and ensure it ends with domain.ext[dot] even if dns_challenge_override_domain is set
+		// trimming both zone & domainName is probably overzealous, but better be safe then sorry
+		var recordName = fmt.Sprintf("%s.%s", strings.TrimSuffix(strings.TrimSuffix(currentRecordInfo.libdnsRecord.Name, zone), domainName), zone)
+		var recordTTL = int(currentRecordInfo.libdnsRecord.TTL.Seconds())
+		if !slices.Contains(supportedTTLs, recordTTL) {
+			// Use the first listed TTL if the user did not provide a TTL or provided a unsupported value
+			// It would probably be nice to log a warning about this, but that doesn't seem to be supported in libdns
+			recordTTL = supportedTTLs[0]
+		}
+
 		var newRecordSet = leasewebRecordSet{
-			Name:    currentRecordInfo.libdnsRecord.Name,
+			Name:    recordName,
 			Type:    currentRecordInfo.libdnsRecord.Type,
-			TTL:     int(currentRecordInfo.libdnsRecord.TTL.Seconds()),
+			TTL:     recordTTL,
 			Content: []string{currentRecordInfo.libdnsRecord.Value},
 		}
 
@@ -58,7 +74,6 @@ func fromLibdns(zone string, records []libdns.Record) ([]leasewebRecordSet, erro
 			}
 		}
 
-		newRecordSet.Name = newRecordSet.Name + "."
 		recordSets = append(recordSets, newRecordSet)
 	}
 
