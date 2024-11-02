@@ -53,6 +53,8 @@ func fromLibdns(zone string, records []libdns.Record) ([]leasewebRecordSet, erro
 		if !slices.Contains(supportedTTLs, recordTTL) {
 			// Use the first listed TTL if the user did not provide a TTL or provided a unsupported value
 			// It would probably be nice to log a warning about this, but that doesn't seem to be supported in libdns
+			// Note: Leaseweb uses a default value of 3600. But as this lib will probably mostly be used
+			// with caddy-dns/leaseweb to solve ACME DNS-01 challenges, let's use the lowest possible value
 			recordTTL = supportedTTLs[0]
 		}
 
