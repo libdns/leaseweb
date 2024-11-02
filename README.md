@@ -55,3 +55,9 @@ func main() {
 	}
 }
 ```
+
+## Contributing / developing
+
+Easiest way to get your hands dirty is to use [Caddy](https://github.com/caddyserver/caddy).
+
+Check contributing instructions at [caddy-dns/leaseweb](https://github.com/caddy-dns/leaseweb).
