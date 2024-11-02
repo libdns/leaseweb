@@ -10,20 +10,26 @@ import (
 	"strings"
 )
 
-func handleLeasewebHttpError(res *http.Response) error {
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-		var message = fmt.Sprintf("Received StatusCode %d from Leaseweb API.", res.StatusCode)
-		fmt.Fprintf(os.Stderr, "%s\n", message)
-		data, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return err
-		}
-		var errorResponseModel leasewebHttpError
-		json.Unmarshal([]byte(data), &errorResponseModel)
-		fmt.Fprintf(os.Stderr, "%+v", errorResponseModel)
-		return fmt.Errorf(message)
+func handleLeasewebHttpError(res *http.Response, source string) error {
+	if res.StatusCode >= 200 && res.StatusCode < 300 {
+		// valid response, nothing to handle
+		return nil
 	}
-	return nil
+
+	var message = fmt.Sprintf("Received StatusCode %d from Leaseweb API for %s operation", res.StatusCode, source)
+	fmt.Fprintf(os.Stderr, "%s\n", message)
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+	// add the full response from the Leaseweb API in text to the error message,
+	// this makes it significantly easier to debug errors
+	message += fmt.Sprintf(", response: %s", data)
+
+	var errorResponseModel leasewebHttpError
+	json.Unmarshal([]byte(data), &errorResponseModel)
+	fmt.Fprintf(os.Stderr, "%+v", errorResponseModel)
+	return fmt.Errorf(message)
 }
 
 func (p *Provider) listRecordSets(domainName string) (leasewebRecordSets, error) {
@@ -44,10 +50,10 @@ func (p *Provider) listRecordSets(domainName string) (leasewebRecordSets, error)
 	// if res.StatusCode == 401 {
 	// 	return nil, fmt.Errorf("Received StatusCode %d from Leaseweb API, used APIKey: %s", res.StatusCode, p.APIKey)
 	// }
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return leasewebRecordSets{}, fmt.Errorf("Received StatusCode %d from Leaseweb API.", res.StatusCode)
+	err = handleLeasewebHttpError(res, "list")
+	if err != nil {
+		return leasewebRecordSets{}, err
 	}
-
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return leasewebRecordSets{}, err
@@ -79,10 +85,10 @@ func (p *Provider) createRecordSet(zone string, recordSet leasewebRecordSet) (le
 	if err != nil {
 		return leasewebRecordSet{}, err
 	}
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return leasewebRecordSet{}, fmt.Errorf("Received StatusCode %d from Leaseweb API.", res.StatusCode)
+	err = handleLeasewebHttpError(res, "create")
+	if err != nil {
+		return leasewebRecordSet{}, err
 	}
-
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return leasewebRecordSet{}, err
@@ -114,7 +120,7 @@ func (p *Provider) updateRecordSet(domainName string, recordSet leasewebRecordSe
 	if err != nil {
 		return leasewebRecordSets{}, err
 	}
-	err = handleLeasewebHttpError(res)
+	err = handleLeasewebHttpError(res, "update")
 	if err != nil {
 		return leasewebRecordSets{}, err
 	}

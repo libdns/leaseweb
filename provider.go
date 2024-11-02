@@ -145,7 +145,7 @@ func (p *Provider) DeleteRecords(ctx context.Context, zone string, records []lib
 		if err != nil {
 			return nil, err
 		}
-		err = handleLeasewebHttpError(res)
+		err = handleLeasewebHttpError(res, "delete")
 		if err != nil {
 			return nil, err
 		}
