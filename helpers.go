@@ -41,6 +41,13 @@ func fromLibdns(zone string, records []libdns.Record) ([]leasewebRecordSet, erro
 
 		// Cleanup record name and ensure it ends with domain.ext[dot] even if dns_challenge_override_domain is set
 		// trimming both zone & domainName is probably overzealous, but better be safe then sorry
+		// Example:
+		//   zone: example.com.
+		//   domainName: example.com
+		//   dnsRecord.Name 1: _acme-challenge.example.com
+		//   dnsRecord.Name 2: _acme-challenge.example.com.
+		//   dnsRecord.Name 3: _acme-challenge.
+		//   all after cleanup -> _acme-challenge.example.com.
 		var recordName = fmt.Sprintf("%s.%s", strings.TrimSuffix(strings.TrimSuffix(currentRecordInfo.libdnsRecord.Name, zone), domainName), zone)
 		var recordTTL = int(currentRecordInfo.libdnsRecord.TTL.Seconds())
 		if !slices.Contains(supportedTTLs, recordTTL) {
